@@ -4,6 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import './index.css';
 import { isHMRUpdate } from './hmr-config';
+// Import Lovable Tagger script
+import 'lovable-tagger/dist/lovable-tagger.js';
+
 // COMPLETELY DISABLE HMR
 // Instead of trying to manage HMR during quick actions, just disable it entirely
 if (import.meta.hot) {
@@ -188,6 +191,12 @@ if (rootElement) {
         }
       }
     });
+    
+    // Initialize Lovable observer if it exists
+    if (window.LovableTagger) {
+      console.log('Initializing Lovable Tagger');
+      window.LovableTagger.startObserving();
+    }
     
     // And render the app
     root.render(

@@ -185,6 +185,27 @@ export function App() {
   // Add state to track if quick action is in progress
   const [isQuickActionInProgress, setIsQuickActionInProgress] = useState(false);
 
+  // Setup Lovable Tagger event listeners
+  useEffect(() => {
+    // Register Lovable callback handler if available
+    if (typeof window !== 'undefined' && window.LovableTagger) {
+      console.log('Setting up Lovable Tagger callbacks');
+      
+      // Handle UI update requests from Lovable
+      window.LovableTagger.onUpdateRequest = (data) => {
+        console.log('Received UI update request from Lovable:', data);
+        // Handle component updates as needed
+      };
+    }
+    
+    return () => {
+      // Cleanup event listeners if needed
+      if (typeof window !== 'undefined' && window.LovableTagger) {
+        window.LovableTagger.onUpdateRequest = null;
+      }
+    };
+  }, []);
+
   // Check quick action status
   useEffect(() => {
     const checkQuickActionStatus = () => {
@@ -198,148 +219,59 @@ export function App() {
     // Setup interval to check periodically
     const intervalId = setInterval(checkQuickActionStatus, 1000);
     
-    // Clean up
-    return () => clearInterval(intervalId);
+    return () => {
+      clearInterval(intervalId);
+    };
   }, []);
 
-  // Initial app setup - occurs once at startup
+  // Main initialization effect
   useEffect(() => {
     const initializeApp = async () => {
-      console.log('Starting application initialization...');
-      
-      // Step 1: Apply global styles
       try {
-        globalStyles();
-        console.log('Global styles applied successfully');
-      } catch (stylesError) {
-        console.warn('Error applying global styles:', stylesError);
-      }
-      
-      // Step 2: Apply theme from cached settings if available
-      try {
-        console.log('Initializing application theme...');
+        // Apply the theme based on current path or saved preferences
+        await themeService.initialize();
         
-        // First try to load and apply the theme for the current path
-        try {
-          await themeService.applyThemeForCurrentPath();
-          console.log('Successfully initialized theme from configuration');
-        } catch (themePathError) {
-          console.warn('Error applying theme for path:', themePathError);
-          
-          // Fallback - apply a default theme to prevent unstyled content
-          try {
-            await themeService.applyTheme('winter');
-            console.log('Applied emergency fallback theme');
-          } catch (fallbackError) {
-            console.error('Critical theme application error:', fallbackError);
-            
-            // Last resort - set critical CSS variables directly
-            document.documentElement.style.setProperty('--background', '0 0% 100%');
-            document.documentElement.style.setProperty('--foreground', '224 71.4% 4.1%');
-            document.documentElement.setAttribute('data-theme', 'winter');
-          }
-        }
+        // Perform any other initialization tasks here...
+        
+        // Mark initialization as complete
+        setIsInitialized(true);
       } catch (error) {
-        console.error('Error during theme initialization:', error);
+        console.error('Error during app initialization:', error);
+        // Still mark as initialized to allow rendering even if some parts failed
+        setIsInitialized(true);
       }
-      
-      // Mark initialization as complete
-      console.log('Application initialization complete');
-      setIsInitialized(true);
     };
-
+    
+    // Run the initialization
     initializeApp();
   }, []);
 
-  // Add error boundary for the entire app
-  if (!isInitialized) {
-    // Return a minimal loading state
-    return (
-      <div style={{ 
-        width: '100vw', 
-        height: '100vh', 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        backgroundColor: '#f8fafc',
-        color: '#1e293b',
-        fontFamily: 'system-ui, sans-serif'
-      }}>
-        <div>
-          <div style={{ 
-            fontSize: '1.5rem', 
-            fontWeight: 'bold',
-            marginBottom: '0.5rem' 
-          }}>
-            Loading application...
-          </div>
-          <div style={{ 
-            width: '100%', 
-            height: '4px', 
-            backgroundColor: '#e2e8f0', 
-            borderRadius: '2px',
-            overflow: 'hidden'
-          }}>
-            <div style={{ 
-              width: '30%', 
-              height: '100%', 
-              backgroundColor: '#3b82f6',
-              animation: 'loading 1.5s infinite ease-in-out',
-            }}></div>
-          </div>
-        </div>
-        <style>{`
-          @keyframes loading {
-            0% { width: 0%; margin-left: 0; }
-            50% { width: 30%; margin-left: 70%; }
-            100% { width: 0%; margin-left: 100%; }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  // Special UI for quick action in progress
-  if (isQuickActionInProgress) {
-    // Use the main app structure but with a flag to prevent complex re-renders
-    return (
-      <BrowserRouter>
-        <ThemeProvider defaultMode="light" defaultVariant="default" applyTheme={false}>
-          <MaterialThemeProvider mode="light" variant="default">
-            <AuthProvider>
-              <div className="quick-action-in-progress">
-                <ReactErrorBoundary>
-                  <div className="min-h-screen bg-background">
-                    <AppRoutes />
-                    <Toaster />
-                  </div>
-                </ReactErrorBoundary>
-              </div>
-            </AuthProvider>
-          </MaterialThemeProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-    );
-  }
-
+  // Render the app once initialized
   return (
-    <BrowserRouter>
-      <ReactErrorBoundary>
-        <ThemeProvider>
-          <MaterialThemeProvider mode="light" variant="default">
-            <AuthProvider>
-              <BreadcrumbProvider>
-                <ThemeNavigationHandler />
-                <SupabaseConfigVerifier />
+    <ThemeProvider
+      defaultTheme="system"
+      storageKey="ui-theme"
+    >
+      {globalStyles}
+      <MaterialThemeProvider>
+        <SupabaseConfigVerifier />
+        <BrowserRouter>
+          <AuthProvider>
+            <BreadcrumbProvider>
+              <ReactErrorBoundary>
+                {isQuickActionInProgress && (
+                  <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white py-2 px-4 text-center text-sm font-medium">
+                    A quick action is in progress. Please wait...
+                  </div>
+                )}
                 <AppRoutes />
+                <ThemeNavigationHandler />
                 <Toaster />
-              </BreadcrumbProvider>
-            </AuthProvider>
-          </MaterialThemeProvider>
-        </ThemeProvider>
-      </ReactErrorBoundary>
-    </BrowserRouter>
+              </ReactErrorBoundary>
+            </BreadcrumbProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </MaterialThemeProvider>
+    </ThemeProvider>
   );
 }
-
-export default App;

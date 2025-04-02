@@ -1,3 +1,4 @@
+
 /**
  * Global type declarations for the application
  */
@@ -31,55 +32,43 @@ declare global {
       pingTime: number;
       errorMessage?: string;
     };
+    
+    /**
+     * Lovable Tagger instance
+     */
+    LovableTagger?: LovableTagger;
   }
-}
-
-export {};
-
-declare global {
-  interface Window {
-    /**
-     * Flag to disable HMR during quick actions
-     */
-    __HMR_DISABLED?: boolean;
-    
-    /**
-     * Function to show toast notifications, made available globally
-     */
-    showToast?: (options: { 
-      title: string; 
-      description: string; 
-      variant: string;
-      duration?: number;
-    }) => void;
-    
-    /**
-     * Supabase connection information
-     */
-    __SUPABASE_CONNECTION?: {
-      isConnected: boolean;
-      isNetworkOnline: boolean;
-      lastChecked: number;
-      pingTime: number;
-      errorMessage?: string;
-    };
-    
-    /**
+  
+  /**
+   * Lovable Tagger interface
+   */
+  interface LovableTagger {
+    startObserving: () => void;
+    stopObserving: () => void;
+    onUpdateRequest: ((data: any) => void) | null;
+    getComponents: () => Array<{
+      id: string;
+      name: string;
+      path: string;
+      props: Record<string, any>;
+    }>;
+  }
+  
+  /**
      * Quick action helper functions exposed for debugging and testing
      */
-    toggleDocumentSelection?: (documentId: string) => void;
-    handleQuickAction?: (actionType: string) => Promise<any>;
-    getSelectedDocuments?: () => string[];
-    processQuickAction?: (actionType: string, documentIds?: string[]) => Promise<boolean>;
-    
-    /**
-     * Session storage helper to check if we're in the middle of a quick action
-     */
-    __QUICK_ACTION_STATE?: {
-      inProgress: boolean;
-      action: string | null;
-      startTime: number | null;
-      documentIds: string[];
-    };
-  }
-} 
+  toggleDocumentSelection?: (documentId: string) => void;
+  handleQuickAction?: (actionType: string) => Promise<any>;
+  getSelectedDocuments?: () => string[];
+  processQuickAction?: (actionType: string, documentIds?: string[]) => Promise<boolean>;
+  
+  /**
+   * Session storage helper to check if we're in the middle of a quick action
+   */
+  __QUICK_ACTION_STATE?: {
+    inProgress: boolean;
+    action: string | null;
+    startTime: number | null;
+    documentIds: string[];
+  };
+}

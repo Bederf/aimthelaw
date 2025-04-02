@@ -1,3 +1,4 @@
+
 // Type definitions for Lovable Tagger
 
 interface LovableTagger {
@@ -24,4 +25,4 @@ interface Window {
     pingTime: number;
     errorMessage?: string;
   };
-} 
+}

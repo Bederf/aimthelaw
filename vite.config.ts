@@ -1,6 +1,8 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import { componentTagger } from 'lovable-tagger';
 
 // Custom plugin to prevent HMR on tab focus - DISABLED due to refresh issues
 const preventHmrOnTabFocus = () => {
@@ -53,11 +55,12 @@ const preventHmrOnTabFocus = () => {
   };
 };
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
-    // preventHmrOnTabFocus() // Disabled to prevent refresh issues
-  ],
+    // preventHmrOnTabFocus(), // Disabled to prevent refresh issues
+    mode === 'development' && componentTagger() // Add Lovable component tagger plugin
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -82,10 +85,10 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
+    include: ['react', 'react-dom', 'react-router-dom', 'lovable-tagger'],
   },
   define: {
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify('http://localhost:8000'),  // Backend URL
     'import.meta.env.VITE_API_URL': JSON.stringify('http://localhost:8000'),  // Backend URL
   },
-});
+}));
