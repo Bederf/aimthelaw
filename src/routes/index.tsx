@@ -2,11 +2,12 @@ import React from 'react';
 import { Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { RegisterPage } from "@/pages/Register";
 import { LoginPage } from "@/pages/Login";
-import Landing from "@/pages/Landing";
+import LandingPage from "@/pages/LandingPage";
 import { AdminDashboard } from "@/pages/admin/AdminDashboard";
 import { AdminCostManagementPage } from "@/pages/admin/AdminCostManagementPage";
 import { ClientDashboard } from "@/pages/client/ClientDashboard";
 import { LawyerDashboard } from "@/pages/lawyer/LawyerDashboard";
+import LawyerDashboardPage from '@/pages/lawyer/LawyerDashboardPage';
 import { ListClientsPage } from "@/pages/lawyer/ListClientsPage";
 import { CreateClientPage } from "@/pages/lawyer/CreateClientPage";
 import { ViewSingleClientPage } from "@/pages/lawyer/ViewSingleClientPage";
@@ -342,7 +343,7 @@ export function AppRoutes() {
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/" element={<Landing />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -364,7 +365,7 @@ export function AppRoutes() {
           path="dashboard/:id"
           element={
             <ProtectedRoute allowedRoles={['lawyer']}>
-              <LawyerDashboard />
+              <LawyerDashboardPage />
             </ProtectedRoute>
           }
         />
@@ -628,4 +629,4 @@ export function AppRoutes() {
       <Route path="*" element={<NotFoundPage navigateTo={navigateWrapper} />} />
     </Routes>
   );
-} 
+}
