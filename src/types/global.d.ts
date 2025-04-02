@@ -55,20 +55,22 @@ declare global {
   }
   
   /**
-     * Quick action helper functions exposed for debugging and testing
-     */
-  toggleDocumentSelection?: (documentId: string) => void;
-  handleQuickAction?: (actionType: string) => Promise<any>;
-  getSelectedDocuments?: () => string[];
-  processQuickAction?: (actionType: string, documentIds?: string[]) => Promise<boolean>;
+   * Quick action helper functions exposed for debugging and testing
+   */
+  const toggleDocumentSelection: (documentId: string) => void;
+  const handleQuickAction: (actionType: string) => Promise<any>;
+  const getSelectedDocuments: () => string[];
+  const processQuickAction: (actionType: string, documentIds?: string[]) => Promise<boolean>;
   
   /**
    * Session storage helper to check if we're in the middle of a quick action
    */
-  __QUICK_ACTION_STATE?: {
+  interface QuickActionState {
     inProgress: boolean;
     action: string | null;
     startTime: number | null;
     documentIds: string[];
-  };
+  }
+  
+  let __QUICK_ACTION_STATE: QuickActionState | undefined;
 }

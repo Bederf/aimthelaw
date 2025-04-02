@@ -1,3 +1,4 @@
+
 // Global type definitions for the application
 
 // Add missing properties to the Window interface
@@ -20,4 +21,17 @@ interface Window {
   };
   safeReload: ((...args: any[]) => boolean);
   showToast?: (options: { title: string; description: string; variant: string }) => void;
-} 
+  LovableTagger?: LovableTagger;
+}
+
+interface LovableTagger {
+  startObserving: () => void;
+  stopObserving: () => void;
+  onUpdateRequest: ((data: any) => void) | null;
+  getComponents: () => Array<{
+    id: string;
+    name: string;
+    path: string;
+    props: Record<string, any>;
+  }>;
+}

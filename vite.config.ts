@@ -3,12 +3,13 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { componentTagger } from 'lovable-tagger';
+import type { ViteDevServer } from 'vite';
 
 // Custom plugin to prevent HMR on tab focus - DISABLED due to refresh issues
 const preventHmrOnTabFocus = () => {
   return {
     name: 'prevent-hmr-on-tab-focus',
-    configureServer(server) {
+    configureServer(server: ViteDevServer) {
       // This plugin is now disabled to prevent refresh issues
       console.log('[vite] HMR tab focus prevention plugin is disabled');
       return;
@@ -20,7 +21,7 @@ const preventHmrOnTabFocus = () => {
       let lastTabFocusTime = 0;
       
       // Override the WebSocket send method
-      server.ws.send = function(payload) {
+      server.ws.send = function(payload: any) {
         // Check if this is an HMR update
         if (typeof payload === 'object' && payload.type === 'update') {
           // Get current time
@@ -38,8 +39,8 @@ const preventHmrOnTabFocus = () => {
       };
       
       // Listen for connection events to track tab focus
-      server.ws.on('connection', (socket) => {
-        socket.on('message', (data) => {
+      server.ws.on('connection', (socket: WebSocket) => {
+        socket.on('message', (data: WebSocket.Data) => {
           try {
             const message = JSON.parse(data.toString());
             if (message.event === 'tab-focus') {
