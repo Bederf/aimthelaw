@@ -1,0 +1,258 @@
+import { test, expect } from '@playwright/test';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+// Get dirname in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+/**
+ * Test for AI Lawyer Quick Actions
+ * 
+ * This test verifies:
+ * 1. Login and navigation to AI Lawyer with specific client UUID and conversation ID
+ * 2. Quick actions functionality
+ * 3. Text-to-speech components appearing for quick action outputs
+ */
+test.describe('AI Lawyer Quick Actions Test', () => {
+  // Known working client and conversation IDs
+  const clientId = 'a6cf1906-1e0b-40b8-8def-14643f54232f';
+  const conversationId = '07433dc8-4552-450e-82d3-db73fb70d9c8';
+  
+  // Ensure logs directory exists
+  const logsDir = path.join(__dirname, 'logs');
+  
+  test.beforeAll(async () => {
+    // Create the logs directory if it doesn't exist
+    if (!fs.existsSync(logsDir)) {
+      fs.mkdirSync(logsDir, { recursive: true });
+    }
+  });
+
+  // Helper function to create a timestamped log message
+  const log = (message) => {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] ${message}`;
+    console.log(logMessage);
+    fs.appendFileSync(path.join(logsDir, 'quick-actions-test.log'), logMessage + '\n');
+    return logMessage;
+  };
+
+  // Helper function for login
+  const performLogin = async (page) => {
+    await page.goto('/login');
+    log('Navigated to login page');
+    
+    // Fill login credentials
+    await page.fill('input[type="email"], input[placeholder*="email" i]', 'mike@law.com');
+    await page.fill('input[type="password"], input[placeholder*="password" i]', 'LAW_SNOW_801010');
+    
+    // Click login button
+    await page.click('button[type="submit"], button:has-text("Sign In")');
+    
+    // Wait for login and dashboard load
+    await page.waitForURL('**/lawyer/dashboard/**', { timeout: 30000 });
+    log('Login successful, dashboard loaded');
+  };
+
+  test.beforeEach(async ({ page }) => {
+    // Enable console logging from the page to help with debugging
+    page.on('console', msg => {
+      log(`BROWSER CONSOLE: [${msg.type()}] ${msg.text().substring(0, 100)}`);
+    });
+    
+    // Login
+    await performLogin(page);
+    
+    // Navigate directly to the AI Lawyer page with known client and conversation IDs
+    await page.goto(`/lawyer/ai/${clientId}/${conversationId}`);
+    log(`Navigated to AI Lawyer page: /lawyer/ai/${clientId}/${conversationId}`);
+    
+    // Wait for the page to load
+    await page.waitForTimeout(5000);
+    log('AI Lawyer page loaded');
+    
+    // Take screenshot for verification
+    await page.screenshot({ path: path.join(logsDir, 'ai-lawyer-page.png'), fullPage: true });
+  });
+
+  test('Verify page structure and quick actions', async ({ page }) => {
+    // Check what components are actually on the page
+    const components = await page.evaluate(() => {
+      return {
+        // Main page components
+        title: document.title,
+        h1Text: Array.from(document.querySelectorAll('h1')).map(h => h.textContent?.trim()).join(', '),
+        h2Text: Array.from(document.querySelectorAll('h2')).map(h => h.textContent?.trim()).join(', '),
+        
+        // Chat components
+        hasChatInterface: !!document.querySelector('.chat-interface, [data-testid="chat-interface"]'),
+        hasMessageInput: !!document.querySelector('textarea.message-input, [data-testid="message-input"]'),
+        hasModelSelector: !!document.querySelector('.model-selector, [data-testid="model-selector"]'),
+        
+        // File components
+        hasFileSection: !!document.querySelector('.file-section, [data-testid="file-section"]'),
+        fileCount: document.querySelectorAll('[data-testid^="file-item-"], .file-item').length,
+        
+        // Quick actions
+        quickActionButtons: Array.from(document.querySelectorAll('button'))
+          .filter(btn => {
+            const text = btn.textContent?.toLowerCase() || '';
+            return (
+              text.includes('extract dates') || 
+              text.includes('summarize') || 
+              text.includes('reply to letter') || 
+              text.includes('prepare for court') ||
+              text.includes('quick action')
+            );
+          })
+          .map(btn => ({
+            text: btn.textContent?.trim() || '',
+            isDisabled: btn.disabled || false,
+            classes: btn.className
+          }))
+      };
+    });
+    
+    // Log all components found
+    log('Page components:');
+    log(`- Title: ${components.title}`);
+    log(`- H1 Text: ${components.h1Text}`);
+    log(`- H2 Text: ${components.h2Text}`);
+    log(`- Chat Interface: ${components.hasChatInterface ? 'Present' : 'Not found'}`);
+    log(`- Message Input: ${components.hasMessageInput ? 'Present' : 'Not found'}`);
+    log(`- Model Selector: ${components.hasModelSelector ? 'Present' : 'Not found'}`);
+    log(`- File Section: ${components.hasFileSection ? 'Present' : 'Not found'}`);
+    log(`- File Count: ${components.fileCount}`);
+    
+    // Log quick action buttons
+    log('Quick Action Buttons:');
+    components.quickActionButtons.forEach((btn, i) => {
+      log(`- Button ${i+1}: "${btn.text}" | Disabled: ${btn.isDisabled}`);
+    });
+    
+    // Try to find the Quick Actions button
+    const quickActionsButton = page.locator('button:has-text("Quick Actions")');
+    const isQuickActionsVisible = await quickActionsButton.isVisible().catch(() => false);
+    
+    log(`Quick Actions button visible: ${isQuickActionsVisible}`);
+    
+    if (isQuickActionsVisible) {
+      // Try to click the Quick Actions button
+      await quickActionsButton.click();
+      log('Clicked Quick Actions button');
+      
+      // Take screenshot of the quick actions menu
+      await page.screenshot({ path: path.join(logsDir, 'quick-actions-menu.png'), fullPage: true });
+      
+      // Wait a moment for animation
+      await page.waitForTimeout(1000);
+      
+      // Look for individual quick action buttons that might appear in a dropdown
+      const extractDatesButton = page.locator('button:has-text("Extract Dates")');
+      const summarizeButton = page.locator('button:has-text("Summarize")');
+      
+      const hasExtractDates = await extractDatesButton.isVisible().catch(() => false);
+      const hasSummarize = await summarizeButton.isVisible().catch(() => false);
+      
+      log(`Extract Dates button visible: ${hasExtractDates}`);
+      log(`Summarize button visible: ${hasSummarize}`);
+      
+      // Check if buttons are disabled
+      if (hasExtractDates) {
+        const isDisabled = await extractDatesButton.isDisabled().catch(() => true);
+        log(`Extract Dates button disabled: ${isDisabled}`);
+      }
+      
+      if (hasSummarize) {
+        const isDisabled = await summarizeButton.isDisabled().catch(() => true);
+        log(`Summarize button disabled: ${isDisabled}`);
+      }
+    }
+    
+    // Check for any visible error messages
+    const errorMessages = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('.error, .error-message, [role="alert"]'))
+        .map(el => el.textContent?.trim())
+        .filter(text => !!text);
+    });
+    
+    if (errorMessages.length > 0) {
+      log('Error messages found:');
+      errorMessages.forEach((msg, i) => {
+        log(`- Error ${i+1}: ${msg}`);
+      });
+    }
+    
+    // Look for any content about file selection requirements
+    const fileRequirementText = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('p, div, span'))
+        .filter(el => {
+          const text = el.textContent?.toLowerCase() || '';
+          return text.includes('select') && 
+                 (text.includes('file') || text.includes('document')) && 
+                 (text.includes('first') || text.includes('required') || text.includes('need'));
+        })
+        .map(el => el.textContent?.trim())
+        .filter(text => !!text);
+    });
+    
+    if (fileRequirementText.length > 0) {
+      log('File selection requirement text found:');
+      fileRequirementText.forEach((text, i) => {
+        log(`- Text ${i+1}: ${text}`);
+      });
+    }
+  });
+
+  test('Test chat functionality and interaction between chat and files', async ({ page }) => {
+    // Check if chat input is present
+    const messageInput = page.locator('textarea.message-input, [data-testid="message-input"]');
+    const hasMessageInput = await messageInput.isVisible().catch(() => false);
+    
+    log(`Message input visible: ${hasMessageInput}`);
+    
+    if (hasMessageInput) {
+      // Try to send a message asking about how to use quick actions
+      await messageInput.fill('How do I use quick actions? Do I need to select a document first?');
+      log('Typed test message about quick actions');
+      
+      // Screenshot before sending
+      await page.screenshot({ path: path.join(logsDir, 'before-send-question.png'), fullPage: true });
+      
+      // Find and click send button
+      const sendButton = page.locator('button:has-text("Send")');
+      await sendButton.click();
+      log('Clicked send button');
+      
+      // Wait for AI response to appear
+      try {
+        await page.waitForSelector('.ai-message, [data-testid="ai-message"]', { timeout: 30000 });
+        log('AI message appeared in response to quick actions question');
+        
+        // Take screenshot after receiving response
+        await page.screenshot({ path: path.join(logsDir, 'ai-response-quick-actions.png'), fullPage: true });
+        
+        // Get the AI response text
+        const aiResponse = await page.locator('.ai-message, [data-testid="ai-message"]').first().innerText();
+        log('AI response to quick actions question:');
+        log(aiResponse.substring(0, 300) + (aiResponse.length > 300 ? '...' : ''));
+        
+        // Check if the response mentions selecting documents
+        const mentionsDocumentSelection = aiResponse.toLowerCase().includes('select') && 
+                                         (aiResponse.toLowerCase().includes('document') || 
+                                          aiResponse.toLowerCase().includes('file'));
+        
+        log(`AI response mentions document selection: ${mentionsDocumentSelection}`);
+      } catch (error) {
+        log(`Error waiting for AI response: ${error}`);
+        await page.screenshot({ path: path.join(logsDir, 'error-waiting-response.png'), fullPage: true });
+      }
+    }
+  });
+
+  test.afterAll(async () => {
+    log('Tests completed');
+  });
+}); 

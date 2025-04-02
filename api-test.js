@@ -1,0 +1,1 @@
+console.log('Testing API client...'); try { const clientId = 'f4b37694-45b2-41f2-9f8e-328b266f93a9'; const fileId = 'c8001a8f-9d58-461a-bf97-ad7192174e98'; console.log('Will try to call api.generateInsights with', clientId, fileId); } catch(e) { console.error('Test script error:', e); }

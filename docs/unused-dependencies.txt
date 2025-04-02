@@ -1,0 +1,11 @@
+Unused devDependencies
+* @tailwindcss/typography
+* autoprefixer
+* depcheck
+* postcss
+* supabase
+* typescript
+Missing dependencies
+* typescript-eslint: ./eslint.config.js
+* @radix-ui/react-icons: ./src/components/ui/ModelSelector.tsx
+* dotenv: ./scripts/fix-token-balances.js

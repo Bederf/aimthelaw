@@ -1,0 +1,16 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copy source code
+# In development, we'll mount the source code as a volume
+
+# Expose port
+EXPOSE 3000
+
+# Command for development
+CMD ["npm", "run", "dev"] 

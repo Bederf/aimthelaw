@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS Iframe Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        select, button {
+            padding: 8px 12px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f5f5f5;
+            cursor: pointer;
+        }
+        button {
+            background: #4a7bff;
+            color: white;
+            border: none;
+        }
+        button:hover {
+            background: #3a6ae8;
+        }
+        iframe {
+            border: 1px solid #eee;
+            border-radius: 4px;
+            width: 100%;
+            height: 50px;
+            margin-top: 20px;
+        }
+        .player-container {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        .status {
+            margin-top: 10px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Text-to-Speech Iframe Playback Test</h1>
+    <p>This page demonstrates how to use iframes to directly play TTS audio from the backend streaming API.</p>
+    
+    <div>
+        <textarea id="text-input" placeholder="Enter text to convert to speech...">This is a test of the text-to-speech system using iframes for direct audio playback in WSL environments. This should work even when standard audio playback fails.</textarea>
+    </div>
+    
+    <div>
+        <select id="voice-select">
+            <option value="nova">Nova (Female)</option>
+            <option value="alloy">Alloy (Neutral)</option>
+            <option value="echo">Echo (Male)</option>
+            <option value="fable">Fable (Male)</option>
+            <option value="onyx">Onyx (Male)</option>
+            <option value="shimmer">Shimmer (Female)</option>
+            <option value="coral">Coral (Female)</option>
+        </select>
+        
+        <button id="generate-btn">Generate & Play Audio</button>
+        <button id="download-btn">Download Audio</button>
+    </div>
+    
+    <div class="player-container">
+        <h3>Audio Player (Iframe Mode)</h3>
+        <div id="iframe-container"></div>
+        <p class="status" id="status-message">Ready for audio generation</p>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const textInput = document.getElementById('text-input');
+            const voiceSelect = document.getElementById('voice-select');
+            const generateBtn = document.getElementById('generate-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            const iframeContainer = document.getElementById('iframe-container');
+            const statusMessage = document.getElementById('status-message');
+            
+            // Base URL - change this to your actual API endpoint
+            const API_URL = window.location.origin || 'http://localhost:8000';
+            
+            generateBtn.addEventListener('click', function() {
+                const text = textInput.value.trim();
+                if (!text) {
+                    statusMessage.textContent = 'Please enter some text';
+                    return;
+                }
+                
+                generateAudio(text, voiceSelect.value);
+            });
+            
+            downloadBtn.addEventListener('click', function() {
+                const text = textInput.value.trim();
+                if (!text) {
+                    statusMessage.textContent = 'Please enter some text';
+                    return;
+                }
+                
+                downloadAudio(text, voiceSelect.value);
+            });
+            
+            function generateAudio(text, voice) {
+                statusMessage.textContent = 'Generating audio...';
+                
+                // Create iframe for audio playback
+                const iframe = document.createElement('iframe');
+                
+                // Build URL for streaming endpoint
+                const params = new URLSearchParams();
+                params.append('text', text.substring(0, 2000)); // Limit length
+                params.append('voice', voice);
+                params.append('model', 'tts-1');
+                params.append('summarize', 'true');
+                params.append('format', 'mp3');
+                params.append('request_id', Date.now().toString());
+                
+                // Set iframe source to streaming endpoint
+                iframe.src = `${API_URL}/api/tts/stream?${params.toString()}`;
+                iframe.title = 'Audio player';
+                iframe.allow = 'autoplay';
+                
+                // Clear previous iframe and add new one
+                iframeContainer.innerHTML = '';
+                iframeContainer.appendChild(iframe);
+                
+                statusMessage.textContent = 'Audio should be playing. If not, try the download option.';
+                
+                // Set up load/error handlers
+                iframe.onload = function() {
+                    statusMessage.textContent = 'Audio loaded successfully';
+                };
+                
+                iframe.onerror = function() {
+                    statusMessage.textContent = 'Error loading audio. Try downloading instead.';
+                };
+            }
+            
+            function downloadAudio(text, voice) {
+                statusMessage.textContent = 'Preparing download...';
+                
+                // Build URL for streaming endpoint
+                const params = new URLSearchParams();
+                params.append('text', text.substring(0, 2000)); // Limit length
+                params.append('voice', voice);
+                params.append('model', 'tts-1');
+                params.append('summarize', 'true');
+                params.append('format', 'mp3');
+                params.append('request_id', Date.now().toString());
+                
+                const url = `${API_URL}/api/tts/stream?${params.toString()}`;
+                
+                // Create download link
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `tts-${voice}-${Date.now()}.mp3`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                statusMessage.textContent = 'Download initiated. Check your downloads folder.';
+            }
+        });
+    </script>
+</body>
+</html> 
