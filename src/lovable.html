@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Law - Lovable Integration</title>
+    <!-- Lovable Tagger Script -->
+    <script src="https://cdn.lovable.dev/tagger/v1/lovable-tagger.min.js"></script>
+    <!-- Initialize Lovable with your project key -->
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        if (window.LovableTagger) {
+          console.log('Initializing Lovable Tagger');
+          window.LovableTagger.init({
+            debug: true,
+            autoDetect: true
+          });
+        } else {
+          console.warn('Lovable Tagger script not loaded');
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/lovable.main.tsx"></script>
+  </body>
+</html> 
